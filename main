@@ -1,0 +1,38 @@
+import tweepy
+import pandas as pd
+from dash import Dash, dcc, html
+from dash.dependencies import Input, Output
+from pymongo import MongoClient
+from src.services import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
+from src.constants import BRAZIL_WOE_ID
+
+
+app = Dash(__name__)
+
+app.layout = html.Div([
+    dcc.Input(id='filter-input', type='text', placeholder='Digite uma palavra-chave'),
+    html.Br(),
+    html.Div(id='trends-output')
+])
+
+@app.callback(Output('trends-output', 'children'),
+              [Input('filter-input', 'value')])
+def update_trends(filter_keyword):
+    # Obtém os trends do MongoDB
+    trends = list(trends_collection.find({}))
+    df = pd.DataFrame(trends)
+
+    # Filtra os trends com base na palavra-chave inserida
+    if filter_keyword:
+        df = df[df['name'].str.contains(filter_keyword, case=False)]
+
+    # Cria uma lista de itens para exibição
+    trends_list = []
+    for _, row in df.iterrows():
+        trends_list.append(html.Div(f"Nome: {row['name']}, Volume: {row['tweet_volume']}"))
+
+    return trends_list
+
+
+if __name__=='__main__':
+    app.run_server(debug=True)
